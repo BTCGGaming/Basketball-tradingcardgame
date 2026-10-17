@@ -1395,7 +1395,7 @@ class RulesTestEngine {
  start(options={}){
   if(options.decks&&(!Array.isArray(options.decks)||options.decks.length!==2||!options.decks.every(validDeck)))throw Error('Decks require 30 cards, max 2 copies per name.');
   const lineups=options.lineups||[TEST_PLAYERS.map(p=>p.id),TEST_PLAYERS.map(p=>p.id)];if(!Array.isArray(lineups)||lineups.length!==2||!lineups.every(validMatchLineup))throw Error('Invalid player lineups.');
-  this.s={lineups:copy(lineups),tutorial:!!options.tutorial,id:++this.serial,revision:0,active:true,finished:false,quarter:1,ot:0,used:0,limit:10,
+  this.s={regulationQuarters:options.quarters===1?1:4,lineups:copy(lineups),tutorial:!!options.tutorial,id:++this.serial,revision:0,active:true,finished:false,quarter:1,ot:0,used:0,limit:10,
    first:null,otFirst:null,offense:0,holder:0,defender:0,turn:0,phase:'rolling',energy:[5,5],
    decks:[[],[]],discards:[[],[]],hands:[[],[]],stats:[[],[]],score:[0,0],
    skipped:[0,0],burst:0,assist:null,shot:null,roll:null,notice:null,tip:[null,null],tipContext:'opening',
@@ -1478,8 +1478,8 @@ class RulesTestEngine {
  finishMadeShot(reason='made'){const s=this.s;if(s.shot.freeThrow){s.shot.finishReason=reason;this.log('freeThrowAwarded',{side:s.offense,index:s.shot.player});this.beginRoll('free',s.offense,1,1,[4,5,6]);}else this.consumePossession(1-s.offense,this.defaultHolder(1-s.offense),reason);}
  consumePossession(nextSide,nextHolder,reason){const s=this.s;s.lastScoreSkill=reason==='skillDunk'?'long-arm-slam':null;s.used++;s.endedPossessions++;s.shot=null;s.roll=null;s.posEvents=[];this.clearPossessionEffects();s.settingPossession=true;this.setHolder(nextSide,nextHolder);
   if(s.used>=s.limit){
-   if((s.quarter===4||s.ot>0)&&s.score[0]!==s.score[1]){s.settingPossession=false;s.finished=true;s.phase='end';s.active=false;this.log('final',{winner:s.score[0]>s.score[1]?0:1});return;}
-   if(s.quarter<4){s.quarter++;s.used=0;s.limit=10;s.energy=[5,5];this.draw(0,2);this.draw(1,2);this.setHolder(s.quarter===4?s.first:1-s.first,this.defaultHolder(s.quarter===4?s.first:1-s.first));s.settingPossession=false;this.applyStartEnergy();this.log('quarterStart');this.modalNotice('quarterStart');return;}
+   if((s.quarter===(s.regulationQuarters||4)||s.ot>0)&&s.score[0]!==s.score[1]){s.settingPossession=false;s.finished=true;s.phase='end';s.active=false;this.log('final',{winner:s.score[0]>s.score[1]?0:1});return;}
+   if(s.quarter<(s.regulationQuarters||4)){s.quarter++;s.used=0;s.limit=10;s.energy=[5,5];this.draw(0,2);this.draw(1,2);this.setHolder(s.quarter===4?s.first:1-s.first,this.defaultHolder(s.quarter===4?s.first:1-s.first));s.settingPossession=false;this.applyStartEnergy();this.log('quarterStart');this.modalNotice('quarterStart');return;}
    s.ot++;s.used=0;s.limit=3;s.energy=[5,5];this.draw(0,2);this.draw(1,2);
    if(s.ot===1){s.tip=[null,null];s.tipContext='overtime';s.roll=null;s.settingPossession=false;this.log('otTip');this.modalNotice('otTip');}
    else{this.setHolder((s.otFirst+(s.ot-1))%2,this.defaultHolder((s.otFirst+(s.ot-1))%2));s.settingPossession=false;this.applyStartEnergy();this.log('otStart');this.modalNotice('otStart');}return;
@@ -1656,7 +1656,113 @@ body.lesson-active[data-lesson-step="handsOpen"] #hand .card:first-child .hand-i
 #actions .forced-shot-action{white-space:normal!important;line-height:1.4}
 .player-vector-icon{display:inline-block;width:1em;height:1em;vertical-align:middle}
 .face{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
-</style><div id="storageWarning" role="alert" hidden></div><div id="lessonGuide" hidden></div><style id="collectionTabSpacingCSS">
+</style><div id="storageWarning" role="alert" hidden></div><div id="lessonGuide" hidden></div><style id="modeBrowserCSS">
+#menuView.mode-browser{padding:0!important;background:#000!important;color:#fff;overflow:auto!important}
+#menuView.mode-browser .menu-panel{box-sizing:border-box;width:100%!important;max-width:none!important;min-height:100dvh;margin:0!important;padding:clamp(20px,3vw,48px)!important;background:#000!important;border:0!important;border-radius:0!important;box-shadow:none!important;display:flex;flex-direction:column;gap:12px}
+#menuView.mode-browser #menuTag{color:#f38a38;letter-spacing:.2em;font-family:BTCGDisplay,Impact,sans-serif;font-size:13px}
+#menuView.mode-browser #menuTitle{font-family:BTCGCJK,'Microsoft JhengHei',sans-serif;font-size:clamp(30px,4.2vh,48px);font-weight:900;font-style:italic;line-height:1.2;margin:0 0 8px;color:#fff;text-shadow:2px 3px #59321f}
+#menuView.mode-browser[lang="en"] #menuTitle,#menuView.mode-browser[lang="en"] .mode-card-title{font-family:BTCGDisplay,Impact,sans-serif;font-weight:400}
+#menuView.mode-browser #menuText{display:grid;grid-template-columns:minmax(0,.78fr) minmax(0,1.45fr);gap:clamp(22px,4vw,70px);flex:1;min-height:0;align-items:stretch}
+#menuView.mode-browser .mode-hero{display:flex;flex-direction:column;min-width:0;justify-content:center}
+#menuView.mode-browser .mode-hero-image{height:52vh;max-height:500px;min-height:150px;overflow:hidden;mask-image:linear-gradient(#000 80%,transparent)}
+#menuView.mode-browser .mode-hero-image img{width:100%;height:100%;object-fit:cover;object-position:32% center}
+#menuView.mode-browser .mode-hero-copy{display:grid;gap:10px;margin:8px 0 0;padding:10px 0 22px}
+#menuView.mode-browser .mode-hero-copy strong{font-family:BTCGDisplay,Impact,sans-serif;font-size:clamp(55px,8vw,130px);font-style:italic;line-height:1;color:#fff;letter-spacing:.035em;text-shadow:4px 4px #9b3d13}
+#menuView.mode-browser .mode-hero-copy span{font-family:BTCGDisplay,Impact,sans-serif;font-size:clamp(12px,1.25vw,22px);color:#bdbdbd}
+#menuView.mode-browser .mode-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-content:center}
+#menuView.mode-browser .mode-card{position:relative;box-sizing:border-box;display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:13px;margin:0;padding:22px 24px;min-height:210px;min-width:0;width:100%;height:100%;white-space:normal;background:#0e0e0e;color:#fff;border:1px solid #46413b;border-radius:0;box-shadow:none;transition:border-color .16s,background .16s}
+#menuView.mode-browser .mode-card:not(:disabled):hover{border-color:#f38a38;background:#19130e}
+#menuView.mode-browser .mode-card:focus-visible{outline:3px solid #ffc575;outline-offset:4px}
+#menuView.mode-browser .mode-card:disabled{opacity:1;cursor:default;background:#090909;border-color:#292929;color:#c7c7c7}
+#menuView.mode-browser .mode-card-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+#menuView.mode-browser .mode-index{font-family:BTCGDisplay,Impact,sans-serif;color:#f38a38;font-size:24px;line-height:1}
+#menuView.mode-browser .mode-status{font-size:11px;color:#f5bb73;letter-spacing:.06em}
+#menuView.mode-browser .mode-unavailable .mode-status{color:#aaa}
+#menuView.mode-browser .mode-card-title{font-family:BTCGCJK,'Microsoft JhengHei',sans-serif;font-size:clamp(18px,1.55vw,28px);font-weight:900;font-style:italic;line-height:1.5;color:inherit;overflow-wrap:anywhere}
+#menuView.mode-browser .mode-card-desc{font-size:14px;line-height:1.8;color:#c3beb8;overflow-wrap:anywhere}
+#menuView.mode-browser .mode-card-reward{font-size:13px;line-height:1.8;margin-top:auto;padding-right:10px;color:#c6c6c6}
+.mode-win{color:#ffc575}.mode-reward-divider{color:#888}
+#menuView.mode-browser .mode-card-arrow{position:absolute;bottom:12px;right:12px;font-size:20px;color:#f38a38}
+#menuView.mode-browser .challenge-list .mode-card{min-height:170px;gap:10px;padding:18px 20px}
+#menuView.mode-browser #backMenu{align-self:flex-start;margin:4px 0 0;background:transparent;border:1px solid #555;border-radius:0;color:#fff;padding:10px 20px;font-size:14px}
+.mode-setup .mode-setup-eyebrow{color:#ffbd72;font-size:12px;letter-spacing:.12em}
+.mode-setup h2{font-size:27px;line-height:1.5}.mode-setup p{line-height:1.8}
+.mode-setup-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px;margin-top:24px}
+.match-reward-result{flex-basis:100%;display:grid;gap:6px;color:#ffc575;line-height:1.5;padding:8px;border:1px solid #8d703b;border-radius:7px;font-size:13px}
+@media(min-width:1100px) and (min-height:760px){#menuView.mode-browser .menu-panel{height:100dvh;min-height:0}#menuView.mode-browser{overflow:hidden!important}}
+@media(max-width:1000px){#menuView.mode-browser #menuText{grid-template-columns:minmax(0,.6fr) minmax(0,1.4fr)}#menuView.mode-browser .mode-card{padding:16px;gap:10px}#menuView.mode-browser .mode-card-title{font-size:20px}}
+@media(max-width:700px){#menuView.mode-browser #menuText{display:block}#menuView.mode-browser .mode-hero{display:none}#menuView.mode-browser .mode-list{grid-template-columns:1fr}#menuView.mode-browser .mode-card{min-height:180px}}
+</style><style id="collectionThemeAndConfirmationCSS">
+/* A separate navigation confirmation never consumes a game action or replaces a card modal. */
+#matchConfirmRoot{position:fixed;inset:0;z-index:250000;display:grid;place-items:center;background:#000c;padding:24px;box-sizing:border-box;backdrop-filter:blur(4px)}
+#matchConfirmRoot .match-confirm-panel{width:min(500px,100%);box-sizing:border-box;padding:30px;background:#101010;color:#fff;border:1px solid #f38a38;box-shadow:0 20px 80px #000;max-height:90dvh;overflow:auto}
+#matchConfirmRoot .match-confirm-kicker{font-family:BTCGDisplay,Impact,sans-serif;color:#f7a45d;font-size:12px;letter-spacing:.12em}
+#matchConfirmRoot h2{font-size:25px;line-height:1.5;margin:16px 0 12px}#matchConfirmRoot p{color:#ccc;font-size:16px;line-height:1.8;margin:0 0 25px}
+#matchConfirmRoot .match-confirm-actions{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:12px}
+#matchConfirmRoot button{margin:0;padding:11px 18px;background:#161616;border:1px solid #777;border-radius:0;color:#fff;line-height:1.5}
+#matchConfirmRoot button.primary{background:#f5b568;color:#17100a;border-color:#f5b568;font-weight:800}#matchConfirmRoot button:focus-visible{outline:3px solid #fff;outline-offset:4px}
+/* Only shop/collection pages use this shell; item/tactic card faces retain their colors. */
+#menuView.collection-browser{padding:0!important;background:#000!important;color:#fff;overflow:hidden!important;box-sizing:border-box}
+#menuView.collection-browser>.menu-panel{position:relative;isolation:isolate;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;width:100%!important;max-width:none!important;height:100dvh!important;min-height:0!important;max-height:100dvh!important;margin:0!important;padding:clamp(22px,3vw,46px)!important;background:#000!important;border:0!important;border-radius:0!important;box-shadow:none!important;overflow:hidden!important}
+.collection-page-art{display:none}
+#menuView.collection-browser .collection-page-art{display:block;position:absolute;z-index:-1;top:0;right:0;width:46%;height:190px;pointer-events:none;opacity:.65;mask-image:linear-gradient(90deg,transparent,#000 70%)}
+#menuView.collection-browser .collection-page-art img{display:block;width:100%;height:100%;object-fit:cover;object-position:32% 38%}
+#menuView.collection-browser .collection-page-art::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,#000,transparent 85%)}
+#menuView.collection-browser #menuTag{flex:none;color:#f38a38;font-family:BTCGDisplay,Impact,sans-serif;letter-spacing:.2em;font-size:13px;line-height:1.4}
+#menuView.collection-browser #menuTitle{flex:none;margin:0 0 8px;font-family:BTCGCJK,'Microsoft JhengHei',sans-serif;font-size:clamp(28px,3.8vh,44px);line-height:1.35;font-weight:900;font-style:italic;color:#fff;text-shadow:2px 3px #59321f}
+#menuView.collection-browser[lang="en"] #menuTitle{font-family:BTCGDisplay,Impact,sans-serif;font-weight:400}
+#menuView.collection-browser #menuText{flex:1;min-height:0;max-height:none!important;overflow:auto!important;padding:18px 4px 20px 0;box-sizing:border-box;border-top:1px solid #423326;scrollbar-color:#976238 #171717;scrollbar-width:thin}
+#menuView.collection-browser #backMenu{flex:none;align-self:flex-start;margin:0;background:#070707;border:1px solid #666;border-radius:0;color:#fff;padding:10px 20px;line-height:1.4;font-size:14px}
+#menuView.collection-browser #menuText button:not(.action-card-surface):not(.lineup-slot):not(.catalog-player-tile){border-radius:0;background:#111;color:#eee;border-color:#51483f;box-shadow:none}
+#menuView.collection-browser #menuText button:not(.action-card-surface):not(.lineup-slot):not(.catalog-player-tile):not(:disabled):hover{background:#20160f;border-color:#f38a38;color:#ffd09a}
+#menuView.collection-browser #menuText button:focus-visible{outline:2px solid #ffbb71;outline-offset:3px}
+#menuView.collection-browser #menuText :is(.lineup-tabs,.team-tabs,.action-catalog-options) button.selected,#menuView.collection-browser #menuText button.primary{background:#f5b568!important;color:#17100a!important;border-color:#f5b568!important;font-weight:800}
+#menuView.collection-browser #menuText button:disabled{opacity:.45;cursor:default}
+#menuView.collection-browser #menuText .lineup-top{background:#000;border-color:#493728;flex-wrap:wrap;gap:12px;margin:0 0 18px;padding:0 0 16px}
+#menuView.collection-browser #menuText .lineup-tabs{flex-wrap:wrap;gap:10px}
+#menuView.collection-browser #menuText .lineup-tabs button{min-height:42px;padding:10px 17px;line-height:1.5}
+#menuView.collection-browser #menuText .account-stat{color:#bbb}
+#menuView.collection-browser #menuText .team-tabs{gap:12px;margin:18px 0}
+#menuView.collection-browser #menuText :is(.lineup-picker,.deck-picker,.collection-note){background:#0d0d0d;border:1px solid #4a3c2f;border-radius:0;color:#eee;box-shadow:none}
+#menuView.collection-browser #menuText .deck-picker-footer{background:#15100c;border-color:#775438;border-radius:0}
+#menuView.collection-browser #menuText .lineup-slot{background:#101010;border:1px solid #61503d;border-radius:0;color:#fff;min-height:172px;padding:18px 8px;gap:12px}
+#menuView.collection-browser #menuText .lineup-slot>span:first-child{color:#ffbc79;font-family:BTCGDisplay,Impact,sans-serif;font-size:18px}
+#menuView.collection-browser #menuText .lineup-slot>span:nth-child(2){font-size:30px;line-height:1}
+#menuView.collection-browser #menuText .lineup-slot strong{font-size:15px;line-height:1.6}
+#menuView.collection-browser #menuText .lineup-slot:not(:disabled):hover{border-color:#f38a38;background:#1a130e}
+#menuView.collection-browser #menuText .lineup-inspect{margin:0;min-height:39px;line-height:1.4}
+#menuView.collection-browser #menuText .lineup-toolbar{gap:12px;flex-wrap:wrap;margin:14px 0}
+#menuView.collection-browser #menuText :is(.catalog-team-tile,.catalog-player-tile){background:#0e0e0e;color:#eee;border-color:#4d4034;border-radius:0;line-height:1.6}
+#menuView.collection-browser #menuText :is(.catalog-team-tile,.catalog-player-tile):hover{border-color:#f38a38;background:#19120c}
+#menuView.collection-browser #menuText .catalog-crumb strong{color:#ffc183}
+#menuView.collection-browser .shop-view{background:transparent;border:0;border-radius:0;padding:0!important;margin:0}
+#menuView.collection-browser .shop-view .btcg-wallet{background:#100d09;border:1px solid #705438;border-radius:0;box-shadow:none;margin:0 0 20px;padding:18px 24px;gap:20px}
+#menuView.collection-browser .shop-view .btcg-wallet-icon{font-size:42px}
+#menuView.collection-browser .shop-view .btcg-wallet-label{color:#c9beb1;font-size:13px;letter-spacing:.08em}
+#menuView.collection-browser .shop-view .btcg-wallet-amount{color:#ffc575;font-family:BTCGDisplay,Impact,sans-serif;font-size:42px;text-shadow:none;line-height:1.25;font-weight:400}
+#menuView.collection-browser .shop-view .btcg-wallet-amount span{font-family:inherit;color:#ccc;font-size:15px}
+#menuView.collection-browser .shop-view .btcg-shop-help{font-size:13px;line-height:1.9;color:#bdb6ae;max-width:1150px;margin:0 0 22px}
+#menuView.collection-browser .shop-view .shop-categories{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:22px 0}
+#menuView.collection-browser .shop-view .shop-category{min-height:165px;padding:24px 38px;align-items:center;border:1px solid #514131!important;text-align:center}
+#menuView.collection-browser .shop-view .shop-category-copy strong{font-size:21px;font-family:BTCGCJK,'Microsoft JhengHei',sans-serif;font-weight:900;font-style:italic;line-height:1.7;color:#fff}
+#menuView.collection-browser[lang="en"] .shop-view .shop-category-copy strong{font-family:BTCGDisplay,Impact,sans-serif;font-weight:400}
+#menuView.collection-browser .shop-view .shop-category-copy .small{color:#beb5ab;font-size:13px;line-height:1.8;margin-top:10px}
+#menuView.collection-browser .shop-view .stage-arrow{color:#f38a38}
+#menuView.collection-browser .shop-view .shop-products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin:20px 0}
+#menuView.collection-browser .shop-view .shop-products:has(>.shop-product:only-child){grid-template-columns:1fr}
+#menuView.collection-browser .shop-view .shop-product{padding:22px!important;display:flex;flex-direction:column;gap:10px}
+#menuView.collection-browser .shop-view .shop-product-heading{gap:10px;align-items:flex-start}
+#menuView.collection-browser .shop-view .shop-product-heading>strong{color:#fff;font-size:19px;font-weight:900;line-height:1.8}
+#menuView.collection-browser .shop-view .shop-product :is(p,.shop-empty){color:#beb7af;line-height:1.9}
+#menuView.collection-browser .shop-view .shop-product-purchase{margin-top:auto;align-items:center;justify-content:space-between}
+#menuView.collection-browser .shop-view .shop-product-purchase b{color:#ffc575}
+#menuView.collection-browser .shop-view .shop-product-purchase button{white-space:normal;line-height:1.5}
+#menuView.collection-browser .shop-view .pack-owned-count{border-radius:0;background:#17120c;border-color:#604a33;color:#e7bf8e}
+#menuView.collection-browser .shop-view .shop-toolbar{gap:16px;flex-wrap:wrap}
+#menuView.collection-browser .shop-view .shop-toolbar h3{color:#f6c18b;font-size:19px}
+@media(max-width:1100px){#menuView.collection-browser .shop-view :is(.shop-categories,.shop-products){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#menuView.collection-browser .shop-view :is(.shop-categories,.shop-products){grid-template-columns:1fr}#menuView.collection-browser>.menu-panel{padding:18px!important}#menuView.collection-browser #menuTitle{font-size:25px}#menuView.collection-browser #menuText .lineup-tabs button{white-space:normal!important;padding:9px 12px}#menuView.collection-browser #menuText .lineup-slot{min-height:150px}#matchConfirmRoot{padding:16px}#matchConfirmRoot .match-confirm-panel{padding:22px}}
+</style><style id="collectionTabSpacingCSS">
 #menuView.wide-collection-menu #menuText .team-tabs{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:18px 0}
 #menuView.wide-collection-menu #menuText .team-tabs>button{flex:0 0 auto;margin:0;line-height:1.5}
 </style><script id="testUI">
@@ -1664,9 +1770,10 @@ body.lesson-active[data-lesson-step="handsOpen"] #hand .card:first-child .hand-i
 'use strict';
 const $=id=>document.getElementById(id);
 const esc=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let matchNavigationConfirm=null;
 let language='zh-Hant';try{language=localStorage.getItem('btcg-new-rules-language')||'zh-Hant';}catch(_){}
 const tr=(zh,en)=>language==='en'?en:zh;
-const sideName=(side,match=engine.s)=>side===0?tr('我方','Your Team'):match?.tutorial?tr('新手教學隊','Tutorial Team'):tr('新手測試隊','Starter Test Team');
+const sideName=(side,match=engine.s)=>side===0?tr('我方','Your Team'):match?.tutorial?tr('新手教學隊','Tutorial Team'):match?.matchNames?.opponentLabels?tr(...match.matchNames.opponentLabels):tr('新手測試隊','Starter Test Team');
 function playerIconHTML(p){return p.icon==='🪽'?'<svg class="player-vector-icon" aria-hidden="true" viewBox="0 0 64 64"><path d="M10 51C11 31 25 15 54 9C50 31 38 48 18 54L27 39L42 24L24 34L10 51Z" fill="#dcefff" stroke="#426d93" stroke-width="3" stroke-linejoin="round"/><path d="M24 34L18 25M32 29L31 18M40 24L43 13M27 39L39 39" fill="none" stroke="#426d93" stroke-width="3"/></svg>':esc(p.icon);}
 function coinIconHTML(){return '<svg class="player-vector-icon" aria-hidden="true" viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="#dca839" stroke="#ffe4a1" stroke-width="3"/><circle cx="32" cy="32" r="21" fill="none" stroke="#88601a" stroke-width="2"/><path d="M40 21H27a7 7 0 0 0 0 14h10a6 6 0 0 1 0 12H23M32 15v38" fill="none" stroke="#fff0bf" stroke-width="5" stroke-linecap="round"/></svg>';}
 const viewPlayer=(index,side=null)=>side!==null&&engine.s?engine.player(side,index):PLAYER_POOL[index];
@@ -1683,7 +1790,7 @@ const rollName=kind=>({tipoff:tr('先攻擲骰','Opening roll'),shot:tr('出手'
 const periodName=s=>s.ot?tr('延長賽 '+s.ot,'OT '+s.ot):tr('第'+s.quarter+'節','Q'+s.quarter);
 const formalEngine=new RulesTestEngine();let engine=formalEngine,guidedLesson=null,lessonSavedContext=null;let controller='computer',aiTimer=null,inGame=false,lastFinished=null,finishedSaved=null,modalOpen=false,opponentSkillNotice=null,opponentShotNotice=null;
 function storageWarning(message,retry=null){
- const root=$('storageWarning');root.hidden=false;root.innerHTML='<strong>'+esc(tr('資料儲存提醒','Save Notice'))+'</strong><p>'+esc(message)+'</p>'+(retry?'<button id="retryStorage">'+tr('重試儲存','Retry Save')+'</button>':'')+'<button id="dismissStorage">'+tr('知道了','Dismiss')+'</button>';
+ const root=$('storageWarning');delete root.dataset.rewardId;root.hidden=false;root.innerHTML='<strong>'+esc(tr('資料儲存提醒','Save Notice'))+'</strong><p>'+esc(message)+'</p>'+(retry?'<button id="retryStorage">'+tr('重試儲存','Retry Save')+'</button>':'')+'<button id="dismissStorage">'+tr('知道了','Dismiss')+'</button>';
  bind('retryStorage',retry);bind('dismissStorage',()=>{root.hidden=true;});
 }
 function validBoxScore(s){return !!s&&Array.isArray(s.score)&&s.score.length===2&&s.score.every(n=>Number.isSafeInteger(n)&&n>=0)&&Array.isArray(s.stats)&&s.stats.length===2&&s.stats.every(rows=>Array.isArray(rows)&&rows.length===5&&rows.every(r=>r&&typeof r.id==='string'&&STAT_KEYS.every(k=>Number.isSafeInteger(r[k])&&r[k]>=0)&&r.fgm<=r.fga&&r.tpm<=r.tpa&&r.ftm<=r.fta));}
@@ -1691,7 +1798,7 @@ function loadLastMatch(){try{const raw=localStorage.getItem('btcg-new-rules-last
 function statsPlayerName(row){const i=PLAYER_POOL.findIndex(p=>p.id===row.id);return i>=0?playerName(i):tr('未收錄球員','Unavailable Player')+' ('+row.id+')';}
 let failedFinishedSave=null;
 function finishStorage(){
- if(guidedLesson||engine.s?.tutorial)return;const s=engine.s;if(!s?.finished||finishedSaved===s.id||failedFinishedSave===s.id)return;
+ if(guidedLesson||engine.s?.tutorial)return;const s=engine.s;if(s?.finished)settleMatchReward(s);if(!s?.finished||finishedSaved===s.id||failedFinishedSave===s.id)return;
  const snapshot=engine.snapshot();lastFinished=snapshot;
  const retry=()=>{
   if(lastFinished!==snapshot){storageWarning(tr('已有較新的比賽數據，舊數據不會覆蓋新紀錄。','Newer match stats exist. The old match will not overwrite them.'));return;}
@@ -1811,6 +1918,7 @@ function showStats(snapshot){const s=snapshot||engine.s||lastFinished;if(!s)retu
 }
 function act(text,type,data={},disabled=false,primary=false){const b=document.createElement('button');b.type='button';b.textContent=text;b.title=text;b.dataset.mobileLabel=text;b.className=(primary?'primary':'')+(type==='shot'&&data.kind==='hard'?' forced-shot-action':'');b.disabled=disabled;const s=engine.s,id=s.id,revision=s.revision;b.onclick=()=>{if(engine.s?.id!==id)return;perform({type,...data,revision});};$('actions').appendChild(b);}
 function perform(action){
+ if(matchNavigationConfirm)return;
  if(pendingTarget||legacyRollPrompt||opponentSkillNotice||opponentShotNotice)return;
  if(guidedLesson&&(guidedLesson.course===2?!lessonTwoAllowed(action):!(guidedLesson.step===2&&action.type==='roll')))return;
  const previousEvent=engine.s?.events.at(-1)?.number||0;
@@ -1837,15 +1945,41 @@ function chooseAI(){const priority=championPrioritySkill();if(priority)return pr
  if(s.noNormal[side][s.holder]&&s.energy[side]>=engine.passCost(side))return {type:'pass',side,to:(s.holder+1)%5};if(hasPassive(engine.player(side,s.holder),'the-joker')&&s.energy[side]>=engine.passCost(side)+2){const to=engine.roster(side).reduce((best,p,i)=>i!==s.holder&&engine.stat(side,i,'off')>engine.stat(side,best,'off')?i:best,s.holder===0?1:0);return {type:'pass',side,to};}
  const options=Object.entries(SHOTS).filter(([kind,p])=>!s.noNormal[side][s.holder]&&s.energy[side]>=p.cost&&(kind!=='hard'||s.energy[side]===0)).map(([kind,p])=>{const c=engine.shotCheck(kind);return {kind,value:probability(c.dice,c.target,c.faces.length)*p.points-p.cost*0.04};}).sort((a,b)=>b.value-a.value);return options.length?{type:'shot',side,kind:options[0].kind}:{type:'skip',side};}
 const AI_CARD_SKILL_DELAY_MS=2000;
-function scheduleAI(){clearTimeout(aiTimer);if(guidedLesson?.course===2){scheduleLessonTwo();return;}if(legacyRollPrompt)return;const s=engine.s;if(!inGame||modalOpen||pendingTarget||!s||s.finished||controller!=='computer'||guidedLesson&&!(s.phase==='rolling'&&s.roll?.kind==='tipoff'&&s.roll.side===1))return;let action;
+function scheduleAI(){clearTimeout(aiTimer);if(matchNavigationConfirm)return;if(guidedLesson?.course===2){scheduleLessonTwo();return;}if(legacyRollPrompt)return;const s=engine.s;if(!inGame||modalOpen||pendingTarget||!s||s.finished||controller!=='computer'||guidedLesson&&!(s.phase==='rolling'&&s.roll?.kind==='tipoff'&&s.roll.side===1))return;let action;
  if(s.phase==='rolling'&&s.roll.side===1)action={type:'roll'};
  else if(['action','shotresponse'].includes(s.phase)&&s.turn===1)action=chooseAI();else return;
  const id=s.id,revision=s.revision;aiTimer=setTimeout(()=>{if(inGame&&!modalOpen&&engine.s?.id===id&&engine.s.revision===revision)perform({...action,revision});},['card','skill'].includes(action.type)?AI_CARD_SKILL_DELAY_MS:650);
 }
-function showLobby(){clearTimeout(aiTimer);pendingTarget=null;legacyRollPrompt=null;selectedPassSide=null;selectedItem=null;$('battleCardFeedback').hidden=true;finishStorage();inGame=false;leaveGuidedLesson();closeModal();$('noticeRoot').innerHTML='';$('gameScreen').style.display='none';$('menuView').classList.remove('active');$('mainLobby').style.display='';document.body.classList.add('lobby-open');$('lobbyLastStats').hidden=!lastFinished;}
-function startMatch(mode='computer',names={},cardTrial=false,deckLists=null,lineupLists=null,tutorial=false){if(guidedLesson)showLobby();engine=formalEngine;clearTimeout(aiTimer);pendingTarget=null;legacyRollPrompt=null;selectedPassSide=null;selectedSkill=null;selectedSkillId=null;selectedItem=null;opponentSkillNotice=null;opponentShotNotice=null;closeModal();controller=mode;inGame=true;finishedSaved=null;engine.start({intro:true,cardTrial,tutorial,lineups:lineupLists||[starterCollection.lineups[starterCollection.activeLineup].slice(),TEST_PLAYERS.map(p=>p.id)],...(deckLists?{decks:deckLists}:{}),names:{playerDeckName:cardTrial?tr('新手預設卡組','Default Starter Deck'):setupLabel('deck',starterCollection.activeDeck),...names}});$('mainLobby').style.display='none';$('menuView').classList.remove('active');$('gameScreen').style.display='block';document.body.classList.remove('lobby-open');render();scheduleAI();}
+
+function dismissMatchNavigation(resume=true){
+ const pending=matchNavigationConfirm;matchNavigationConfirm=null;document.getElementById('matchConfirmRoot')?.remove();
+ if(resume){pending?.focus?.focus?.();scheduleAI();}
+}
+function requestMatchNavigation(kind){
+ if(matchNavigationConfirm||!inGame||!engine.s)return;
+ clearTimeout(aiTimer);const state=engine.s,lesson=!!guidedLesson;
+ matchNavigationConfirm={kind,state,focus:document.activeElement};
+ const restart=kind==='restart',root=document.createElement('div');root.id='matchConfirmRoot';root.className='match-confirm-backdrop';
+ root.innerHTML='<section class="match-confirm-panel" role="dialog" aria-modal="true" aria-labelledby="matchConfirmTitle" aria-describedby="matchConfirmText"><div class="match-confirm-kicker">BTCG / '+tr('確認操作','CONFIRM')+'</div><h2 id="matchConfirmTitle">'+(restart?tr('確定要重新開始？','Restart this match?'):tr('確定要回到主畫面？','Return to the main menu?'))+'</h2><p id="matchConfirmText">'+(lesson?tr('目前教學進度將不會保留。','Your current tutorial progress will not be kept.'):state.finished?tr('本場已結束，數據與已入帳獎勵會保留。','This match has ended. Saved stats and credited rewards will be kept.'):tr('目前比賽進度將不會保留。','Your current match progress will not be kept.'))+'</p><div class="match-confirm-actions"><button id="cancelMatchNavigation">'+tr('取消','Cancel')+'</button><button id="confirmMatchNavigation" class="primary">'+(restart?tr('確認重新開始','Restart'):tr('確認回到主畫面','Main Menu'))+'</button></div></section>';
+ document.body.appendChild(root);root.onclick=e=>{if(e.target===root)dismissMatchNavigation();};
+ $('cancelMatchNavigation').onclick=()=>dismissMatchNavigation();$('confirmMatchNavigation').onclick=()=>{if(engine.s!==state){dismissMatchNavigation();return;}dismissMatchNavigation(false);if(restart){if(guidedLesson)startLessonOne();else restartCurrentMatch();}else showLobby();};
+ $('cancelMatchNavigation').focus();
+}
+document.addEventListener('keydown',e=>{
+ if(!matchNavigationConfirm)return;
+ if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();dismissMatchNavigation();return;}
+ if(e.key==='Tab'){const buttons=[$('cancelMatchNavigation'),$('confirmMatchNavigation')],at=buttons.indexOf(document.activeElement);e.preventDefault();e.stopImmediatePropagation();buttons[(at+(e.shiftKey?-1:1)+2)%2].focus();}
+},true);
+function themeCollectionPage(kind){
+ const root=$('menuView');root.classList.remove('mode-browser','collection-shop','collection-roster');root.classList.add('collection-browser','collection-'+kind);root.setAttribute('lang',language);
+ const panel=root.querySelector('.menu-panel');let art=panel.querySelector('.collection-page-art');if(!art){art=document.createElement('div');art.className='collection-page-art';art.setAttribute('aria-hidden','true');art.innerHTML='<img alt="">';panel.prepend(art);}art.querySelector('img').src=document.querySelector('#mainLobby .lobby-logo-image').src;
+ $('menuTag').textContent='BTCG / '+(kind==='shop'?'SHOP':'COLLECTION');
+}
+
+function showLobby(){dismissMatchNavigation(false);clearTimeout(aiTimer);pendingTarget=null;legacyRollPrompt=null;selectedPassSide=null;selectedItem=null;$('battleCardFeedback').hidden=true;finishStorage();inGame=false;leaveGuidedLesson();closeModal();$('noticeRoot').innerHTML='';$('gameScreen').style.display='none';$('menuView').classList.remove('active');$('mainLobby').style.display='';document.body.classList.add('lobby-open');$('lobbyLastStats').hidden=!lastFinished;}
+function startMatch(mode='computer',names={},cardTrial=false,deckLists=null,lineupLists=null,tutorial=false,matchConfig=null){if(guidedLesson)showLobby();engine=formalEngine;clearTimeout(aiTimer);pendingTarget=null;legacyRollPrompt=null;selectedPassSide=null;selectedSkill=null;selectedSkillId=null;selectedItem=null;opponentSkillNotice=null;opponentShotNotice=null;closeModal();controller=mode;inGame=true;finishedSaved=null;engine.start({intro:true,cardTrial,tutorial,quarters:matchConfig?.quarters||4,lineups:lineupLists||[starterCollection.lineups[starterCollection.activeLineup].slice(),TEST_PLAYERS.map(p=>p.id)],...(deckLists?{decks:deckLists}:{}),names:{playerDeckName:cardTrial?tr('新手預設卡組','Default Starter Deck'):setupLabel('deck',starterCollection.activeDeck),...names}});if(matchConfig){engine.s.modeKey=matchConfig.id;engine.s.rewardId=globalThis.crypto?.randomUUID?.()||Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);engine.s.rewardStatus='pending';}$('mainLobby').style.display='none';$('menuView').classList.remove('active');$('gameScreen').style.display='block';document.body.classList.remove('lobby-open');$('battleRules').innerHTML='<summary>'+tr('比賽規則','Game Rules')+'</summary>'+rulesHTML();render();scheduleAI();}
 function rulesHTML(){return '<h3>'+tr('新規則・卡片測試','New Rules · Card Test')+'</h3><ul>'+[
- tr('四節，每節雙方共用10次球權。第一、四節由開場擲骰勝方先攻，第二、三節由另一方先攻。','4 quarters, 10 shared possessions each. Opening-roll winner starts Q1 and Q4; the other side starts Q2 and Q3.'),
+ engine.s?.regulationQuarters===1?tr('單節決勝，每節雙方共用10次球權。開場擲骰勝方先攻，平手進入延長賽。','One quarter, 10 shared possessions. Opening-roll winner starts; ties go to overtime.'):tr('四節，每節雙方共用10次球權。第一、四節由開場擲骰勝方先攻，第二、三節由另一方先攻。','4 quarters, 10 shared possessions each. Opening-roll winner starts Q1 and Q4; the other side starts Q2 and Q3.'),
  tr('雙方輪流一次行動：出牌、技能、傳球、出手、抄截或略過。傳球耗1能量。守方只能在出手反應時封阻。','Alternate one action: a card, skill, pass, shot, Steal, or skip. Pass costs 1 Energy. Blocks are only available in the shot response.'),
  tr('禁區：2能量、3骰中1、2分。中距離：1能量、2骰中1、2分。三分：2能量、3骰中2、3分。0能量可受壓迫出手：1骰中1、只有6有效、2分。','Inside: Energy 2, Dice 3, Target 1, 2 points. Mid-range: Energy 1, Dice 2, Target 1, 2 points. 3PT: Energy 2, Dice 3, Target 2, 3 points. At 0 Energy: Forced shot, Dice 1, Target 1, only 6 counts, 2 points.'),
  tr('一般有效骰面4、5、6。出手：進攻每高滿防守100點＋1骰，反之－1骰。抄截、封阻以防守比較進攻。最低1骰，需有效數不變。受壓迫出手也適用。籃板不比較攻防。','4, 5, 6 normally count. Each full 100-point OFF advantage adds 1 shot die; each full DEF advantage removes 1. Steals / Blocks compare DEF to OFF. Minimum 1 die; Target unchanged. Forced shots use this comparison too. Rebounds ignore OFF / DEF.'),
@@ -1869,7 +2003,8 @@ function loadEconomy(initialize=true){
   if(saved===null&&(raw!==null||!initialize))throw Error('Wallet missing');
   if(saved!==null&&(!saved||!Number.isSafeInteger(saved.coins)||saved.coins<0||!Number.isSafeInteger(saved.revision)||saved.revision<0))throw Error('Invalid wallet');
   const counts=source=>Object.fromEntries(Object.entries(source||{}).filter(([id,n])=>!['__proto__','constructor','prototype'].includes(id)&&Number.isSafeInteger(n)&&n>=0));
-  const result={version:1,openedPacks:Number.isSafeInteger(saved?.openedPacks)&&saved.openedPacks>=0?saved.openedPacks:saved?.revision??0,tutorialRewardClaimed:saved?.tutorialRewardClaimed===true,unopenedPacks:counts(saved?.unopenedPacks),coins:saved?.coins??1000,revision:saved?.revision??0,playerOwned:counts(saved?.playerOwned),actionOwned:counts(saved?.actionOwned),purchases:Array.isArray(saved?.purchases)?saved.purchases.slice(-50):[]};
+  const matchRewards=Object.fromEntries(Object.entries(saved?.matchRewards||{}).filter(([key,v])=>!['__proto__','constructor','prototype'].includes(key)&&v&&Number.isSafeInteger(v.amount)&&v.amount>=0));
+  const result={version:1,matchRewards,openedPacks:Number.isSafeInteger(saved?.openedPacks)&&saved.openedPacks>=0?saved.openedPacks:saved?.revision??0,tutorialRewardClaimed:saved?.tutorialRewardClaimed===true,unopenedPacks:counts(saved?.unopenedPacks),coins:saved?.coins??1000,revision:saved?.revision??0,playerOwned:counts(saved?.playerOwned),actionOwned:counts(saved?.actionOwned),purchases:Array.isArray(saved?.purchases)?saved.purchases.slice(-50):[]};
   if(raw===null)localStorage.setItem(economyKey,JSON.stringify(result));economyStorageHealthy=true;return result;
  }catch(_){economyStorageHealthy=false;storageWarning(tr('無法安全讀取或儲存金幣與收藏，購買已暫停。請保留本頁並檢查瀏覽器儲存空間。','Coins and collection could not be safely loaded or saved. Purchases are paused. Keep this page open and check browser storage.'));return null;}
 }
@@ -1906,7 +2041,7 @@ function syncEconomyFromStorage(event){if(event.key!==economyKey)return;const la
 if(window.addEventListener)window.addEventListener('storage',syncEconomyFromStorage);
 function renderShop(page=shopPage){
  const pages={home:['商店','Shop'],players:['球員卡包','Player Packs'],actions:['道具/戰術卡包','Item / Tactic Packs'],skins:['卡片造型','Card Skins'],teams:['第一彈 指定球隊卡包','First Edition Team Packs'],positions:['第一彈 指定位置卡包','First Edition Position Packs'],special:['特殊卡包','Special Packs']};
- shopPage=pages[page]?page:'home';$('menuTitle').textContent=tr(...pages[shopPage]);$('menuTag').textContent=tr('第一彈卡包／商店','First Edition Packs / Shop');$('menuView').classList.add('wide-collection-menu');
+ shopPage=pages[page]?page:'home';$('menuTitle').textContent=tr(...pages[shopPage]);$('menuTag').textContent=tr('第一彈卡包／商店','First Edition Packs / Shop');$('menuView').classList.add('wide-collection-menu');themeCollectionPage('shop');
  const nav=(id,icon,zh,en,hintZh,hintEn)=>'<button type="button" class="catalog-team-tile shop-category" data-shop-page="'+id+'"><span class="shop-category-copy"><strong>'+icon+' '+esc(tr(zh,en))+'</strong><span class="small">'+esc(tr(hintZh,hintEn))+'</span></span><span class="stage-arrow" aria-hidden="true">›</span></button>';
  const productHTML=p=>'<section class="collection-note shop-product"><div class="shop-product-heading"><strong>🎁 '+esc(tr(...p.name))+'</strong><span class="pack-owned-count">'+(shopProductReady(p)?tr('可購買','Available'):tr('卡池準備中','Coming Soon'))+'</span></div><p class="small">'+esc(tr(...p.description))+'</p><div class="row shop-product-purchase"><b>💰 '+tr('售價:','Price: ')+p.price+tr('金幣',' coins')+'</b><button type="button" data-shop-buy="'+p.id+'" '+(!shopProductReady(p)||shopPurchasePending||!economyStorageHealthy?'disabled':'')+' class="primary">'+(shopProductReady(p)?tr('購買並開啟','Buy & Open'):tr('尚未開放','Unavailable'))+'</button></div></section>';
  let html='<div class="pack-feature pack-shop-live shop-view"><div class="btcg-wallet" role="status" aria-live="polite" aria-label="'+tr('目前剩餘金幣','Current Coin Balance')+'"><div class="btcg-wallet-icon" aria-hidden="true">'+coinIconHTML()+'</div><div class="btcg-wallet-copy"><div class="btcg-wallet-label">'+tr('我的金幣餘額','My Coin Balance')+'</div><div class="btcg-wallet-amount">'+(economyStorageHealthy?economy.coins.toLocaleString(language==='en'?'en-US':'zh-TW'):tr('無法載入','Unavailable'))+'<span>'+tr('金幣','coins')+'</span></div></div></div>';
@@ -1974,7 +2109,7 @@ function setupLabel(kind,index){return starterCollection[kind+'Names'][index]||t
 function battleSetupHTML(){return '<div class="rookie-setup-selectors"><label>'+tr('出戰陣容','Lineup')+' <select id="rookieMatchLineup">'+starterCollection.lineups.map((ids,i)=>validLineup(ids)?'<option value="'+i+'" '+(i===starterCollection.activeLineup?'selected':'')+'>'+esc(setupLabel('lineup',i))+'</option>':'').join('')+'</select></label><label>'+tr('出戰卡組','Deck')+' <select id="rookieMatchDeck">'+starterCollection.decks.map((ids,i)=>'<option value="'+i+'" '+(i===starterCollection.activeDeck?'selected':'')+'>'+esc(setupLabel('deck',i))+' · '+ids.length+'/30</option>').join('')+'</select></label></div>';}
 function readBattleSetup(requireDeck=false){const lineup=Number($('rookieMatchLineup')?.value),deck=Number($('rookieMatchDeck')?.value);if(Number.isInteger(lineup)&&validLineup(starterCollection.lineups[lineup]))starterCollection.activeLineup=lineup;if(!validLineup(starterCollection.lineups[starterCollection.activeLineup])){openModal('<p>'+tr('請先完成合法的五人陣容。','Please complete a valid five-player lineup first.')+'</p>');return false;}if(Number.isInteger(deck)&&deck>=0&&deck<10)starterCollection.activeDeck=deck;if(requireDeck&&!validOwnedDeck(starterCollection.decks[starterCollection.activeDeck])){openModal('<p>'+tr('出戰卡組需30張，同名最多2張。請完成編成，或選擇新手預設卡組。','Your deck must have 30 cards, max 2 copies. Finish building it or choose the default starter deck.')+'</p>');return false;}return saveStarterCollection();}
 function renderStarterRoster(){
- $('menuTitle').textContent=tr('陣容／卡組／圖鑑','Lineups / Decks / Catalog');$('menuView').classList.add('wide-collection-menu');
+ $('menuTitle').textContent=tr('陣容／卡組／圖鑑','Lineups / Decks / Catalog');$('menuView').classList.add('wide-collection-menu');themeCollectionPage('roster');
  const tabs=[['lineup',tr('🏀 隊伍編成','🏀 Lineups')],['deck',tr('🃏 卡組編成','🃏 Decks')],['collection',tr('🗂️ 我的球員卡','🗂️ My Players')],['catalog',tr('📖 球員圖鑑','📖 Player Catalog')],['actioncatalog',tr('📚 戰術／道具圖鑑','📚 Tactic / Item Catalog')],['fusion',tr('🧬 球員合成','🧬 Player Fusion')]];
  let html='<div class="lineup-top"><div class="lineup-tabs">'+tabs.map(([id,title])=>'<button data-rookie-tab="'+id+'" class="'+(id===rosterTab?'selected':'')+'">'+title+'</button>').join('')+'</div><span class="account-stat">'+tr('已擁有','Owned: ')+ownedPlayers().length+tr('種球員',' player types')+'</span></div>';
  if(['collection','catalog'].includes(rosterTab)){html+=playerCatalogHTML();
@@ -1991,11 +2126,63 @@ function renderStarterRoster(){
  $('menuText').innerHTML=html;
 }
 function renameStarterSetup(kind){const index=editingSetup;openModal('<h2>'+tr('陣容／卡組命名','Name Your Setup')+'</h2><p>'+tr('最多8字，僅限中文、英文及數字。','Up to 8 Chinese characters, English letters, or digits.')+'</p><input id="rookieSetupName" value="'+esc(starterCollection[kind+'Names'][index])+'" aria-label="'+tr('名稱','Name')+'"><p id="rookieNameError" class="danger" role="alert"></p><button id="rookieSaveName" class="primary">'+tr('儲存','Save')+'</button>');bind('rookieSaveName',()=>{const value=$('rookieSetupName').value;if(!validSetupName(value)){$('rookieNameError').textContent=tr('名稱需1至8字，只能使用中文、英文或數字。','Use 1–8 Chinese characters, English letters, or digits.');return;}starterCollection[kind+'Names'][index]=value;if(!saveStarterCollection())return;closeModal();renderStarterRoster();});}
-function openPage(key){if(key==='tutorial'){startLessonOne();return;}$('menuView').dataset.page=key;$('mainLobby').style.display='none';$('menuView').classList.add('active');$('menuView').classList.remove('wide-collection-menu');$('menuTag').textContent=tr('新規則測試','New Rules Test');$('menuTitle').textContent=tr('基礎攻防測試','Base Gameplay Test');
- if(key==='quick'){
-  $('menuText').innerHTML='<p>'+tr('使用五位新手球員，搭配30張道具／戰術卡進行四節對戰。可選擇已儲存的卡組，或直接使用新手預設卡組。','Play 4 quarters with five rookies and a 30-card item / tactic deck. Choose your saved deck or use the default starter deck.')+'</p>'+battleSetupHTML()+'<div class="row"><button id="startComputer" class="primary">'+tr('使用所選卡組・對戰電腦','Selected Deck · vs. Computer')+'</button><button id="startManual">'+tr('使用所選卡組・雙方手動','Selected Deck · Both Sides')+'</button></div><div class="row" style="margin-top:12px"><button id="trialComputer">'+tr('新手預設30張・對戰電腦','Default 30 Cards · vs. Computer')+'</button><button id="trialManual">'+tr('新手預設30張・雙方手動','Default 30 Cards · Both Sides')+'</button></div>'+rulesHTML();
-  bind('startComputer',()=>{if(readBattleSetup(true))startMatch('computer',{},false,[starterCollection.decks[starterCollection.activeDeck].slice(),DEFAULT_STARTER_DECK.slice()]);});bind('startManual',()=>{if(readBattleSetup(true))startMatch('manual',{},false,[starterCollection.decks[starterCollection.activeDeck].slice(),DEFAULT_STARTER_DECK.slice()]);});bind('trialComputer',()=>{if(readBattleSetup())startMatch('computer',{},true);});bind('trialManual',()=>{if(readBattleSetup())startMatch('manual',{},true);});
- }
+
+const PLAY_MODES=Object.freeze([
+ {id:'quick-random',name:['速戰速決','Quick Match'],team:['隨機隊伍','Random Team'],desc:['( 與AI來場一節決勝負的快速對戰 )','( A quick, one-quarter match against AI )'],quarters:1,win:100,loss:50,open:true},
+ {id:'standard-random',name:['標準對戰','Standard Match'],team:['隨機隊伍','Random Team'],desc:['( 與AI進行一場4節完整的BTCG對戰 )','( A full four-quarter BTCG match against AI )'],quarters:4,win:500,loss:300,open:true},
+ {id:'quick-theme',name:['速戰速決','Quick Match'],team:['主題隊伍','Themed Team'],desc:['( 與完整球隊進行一節決勝負 )','( A one-quarter match against a complete team )'],quarters:1,win:200,loss:100,open:false},
+ {id:'standard-theme',name:['標準對戰','Standard Match'],team:['主題隊伍','Themed Team'],desc:['( 與完整球隊進行一場4節完整對戰 )','( A full four-quarter match against a complete team )'],quarters:4,win:1000,loss:500,open:false}
+]);
+const CHALLENGE_MODES=Object.freeze([
+ {id:'league',name:['征戰聯盟','League Conquest'],desc:['( 嘗試爭奪冠軍的各個強隊,究竟誰是最後的王者 )','( Championship contenders compete. Who will be the last team standing? )']},
+ {id:'historic',name:['歷史名隊','Historic Teams'],desc:['( 紀錄於回憶中的歷史名隊,舊世代的強者依舊如高牆般聳立 )','( Teams etched in memory. Legends of past generations still stand tall. )']},
+ {id:'eras',name:['輝煌年代','Golden Eras'],desc:['( 各個年代的代表人物齊聚一堂,籃球演進的教科書再現於球場 )','( Icons from every era reunite, bringing basketball’s evolution to the court. )']},
+ {id:'champions',name:['歷代冠軍','Champions Through Time'],desc:['( 那些曾經奪冠的王者勁旅,難以抗衡的球隊體系 )','( Championship teams with formidable systems that stand the test of time. )']},
+ {id:'dream',name:['夢之隊','Dream Teams'],desc:['( 背負國家榮耀的傳奇隊伍,讓世界看到籃球的最高水準 )','( Legendary teams carry national pride and showcase basketball at its highest level. )']},
+ {id:'hall',name:['名人堂','Hall of Fame'],desc:['( 紀錄於名冊的傳說人物,挑戰不可能,成為不可能 )','( Face the legends. Challenge the impossible. Become the impossible. )']}
+]);
+const modeTitle=m=>tr(...m.name)+' / '+tr(...m.team);
+function modeRewardsHTML(m){return '<span class="mode-win">'+tr('勝利+','Win +')+m.win+tr(' 金幣',' coins')+'</span><span class="mode-reward-divider"> / </span><span>'+tr('失敗+','Loss +')+m.loss+tr('金幣',' coins')+'</span>';}
+function renderModeBrowser(key){
+ const challenge=key==='challenge',list=challenge?CHALLENGE_MODES:PLAY_MODES,root=$('menuView');root.classList.add('mode-browser');root.setAttribute('lang',language);root.dataset.page=key;
+ $('menuTag').textContent='BTCG / '+(challenge?'CHALLENGES':'PLAY');$('menuTitle').textContent=tr(challenge?'挑戰模式':'對戰模式',challenge?'Challenges':'Play');
+ $('menuText').innerHTML='<div class="mode-hero"><div class="mode-hero-image"><img id="modeHeroArt" alt=""></div><div class="mode-hero-copy"><strong>BTCG</strong><span>Basketball Trading Card Game</span></div></div><div class="mode-list '+(challenge?'challenge-list':'')+'">'+list.map((m,i)=>'<button type="button" class="mode-card '+(!m.open?'mode-unavailable':'')+'" data-play-mode="'+m.id+'" '+(!m.open?'disabled':'')+'><span class="mode-card-top"><span class="mode-index">'+String(i+1).padStart(2,'0')+'</span><span class="mode-status">'+(m.open?tr('可挑戰','AVAILABLE'):tr('暫未開放','COMING SOON'))+'</span></span><strong class="mode-card-title">'+esc(challenge?tr(...m.name):modeTitle(m))+'</strong><span class="mode-card-desc">'+esc(tr(...m.desc))+'</span>'+(challenge?'':'<span class="mode-card-reward">'+modeRewardsHTML(m)+'</span>')+'<span class="mode-card-arrow" aria-hidden="true">'+(m.open?'↗':'—')+'</span></button>').join('')+'</div>';
+ $('modeHeroArt').src=document.querySelector('#mainLobby .lobby-logo-image').src;
+ $('menuText').querySelectorAll('[data-play-mode]:not([disabled])').forEach(b=>b.onclick=()=>showModeSetup(b.dataset.playMode));
+}
+function shuffled(values,random=Math.random){const a=values.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function randomOpponentLineup(random=Math.random){
+ const pool=shuffled(PLAYER_POOL,random),chosen=[];
+ function pick(slot){if(slot===5)return true;for(const p of shuffled(pool.filter(p=>p.pos.split('/').includes(SLOT_POS[slot])&&!chosen.includes(p.id)),random)){chosen.push(p.id);if(pick(slot+1))return true;chosen.pop();}return false;}
+ return pick(0)?chosen:TEST_PLAYERS.map(p=>p.id);
+}
+function randomOpponentDeck(random=Math.random){return shuffled(ACTION_CARDS.flatMap(c=>[c.id,c.id]),random).slice(0,30);}
+function showModeSetup(id){const m=PLAY_MODES.find(m=>m.id===id&&m.open);if(!m)return;
+ openModal('<section class="mode-setup"><div class="mode-setup-eyebrow">BTCG / '+tr('準備對戰','MATCH SETUP')+'</div><h2>'+esc(modeTitle(m))+'</h2><p>'+esc(tr(...m.desc))+'</p><p class="mode-setup-rewards">'+modeRewardsHTML(m)+'</p>'+battleSetupHTML()+'<div class="mode-setup-actions"><button id="startSelectedMode" class="primary">'+tr('開始對戰','Start Match')+'</button><button id="startDefaultMode">'+tr('使用新手預設卡組','Use Default Starter Deck')+'</button></div></section>');
+ const launch=useDefault=>{if(!readBattleSetup(!useDefault))return;const ownLineup=starterCollection.lineups[starterCollection.activeLineup].slice(),ownDeck=useDefault?DEFAULT_STARTER_DECK.slice():starterCollection.decks[starterCollection.activeDeck].slice();const labels=[m.name[0],m.name[1]];closeModal();startMatch('computer',{opponentLabels:labels,opponentDeckName:tr(...labels),playerDeckName:useDefault?tr('新手預設卡組','Default Starter Deck'):setupLabel('deck',starterCollection.activeDeck)},useDefault,[ownDeck,randomOpponentDeck()],[ownLineup,randomOpponentLineup()],false,m);};
+ bind('startSelectedMode',()=>launch(false));bind('startDefaultMode',()=>launch(true));
+}
+function restartCurrentMatch(){const s=engine.s,m=PLAY_MODES.find(m=>m.id===s?.modeKey&&m.open);if(m){startMatch('computer',{...s.matchNames},s.cardTrial,[s.startDecks[0].slice(),randomOpponentDeck()],[s.lineups[0].slice(),randomOpponentLineup()],false,m);return;}startMatch(controller,s?.matchNames||{},!!s?.cardTrial,s?.startDecks?.every(d=>d.length)?s.startDecks:null,s?.lineups,s?.tutorial);}
+const rewardInFlight=new Set();
+function settleMatchReward(s){
+ const m=PLAY_MODES.find(m=>m.id===s?.modeKey&&m.open);if(!m||!s.finished||s.tutorial||s.rewardClaimed||s.rewardStatus==='error'||!s.rewardId||rewardInFlight.has(s.rewardId))return;
+ rewardInFlight.add(s.rewardId);s.rewardStatus='settling';
+ const saveResult=()=>{if(lastFinished?.rewardId===s.rewardId){lastFinished=copy(s);try{localStorage.setItem('btcg-new-rules-last-match',JSON.stringify(lastFinished));}catch(_){/* Coin ledger remains authoritative; stats retry is separate. */}}};
+ (async()=>{try{
+  if(!navigator.locks?.request)throw Error('locks');
+  await navigator.locks.request('btcg-wallet-purchase-v1',()=>{
+   const latest=loadEconomy(false);if(!latest)throw Error('wallet');const prior=latest.matchRewards?.[s.rewardId];let next=latest,amount=prior?.amount;
+   if(!prior){const won=s.score[0]>s.score[1];amount=won?m.win:m.loss;next=copy(latest);next.matchRewards=next.matchRewards||{};next.matchRewards[s.rewardId]={amount,won,mode:m.id};next.coins+=amount;if(!Number.isSafeInteger(next.coins))throw Error('balance');next.revision++;localStorage.setItem(economyKey,JSON.stringify(next));}
+   economy=next;s.rewardClaimed=true;s.rewardCoins=amount;s.rewardStatus='claimed';saveResult();if($('storageWarning').dataset.rewardId===s.rewardId){$('storageWarning').hidden=true;delete $('storageWarning').dataset.rewardId;}
+  });
+ }catch(_){s.rewardStatus='error';saveResult();storageWarning(tr('本場金幣尚未入帳，請按重試。','Match coins have not been credited. Retry to claim.'),()=>{s.rewardStatus='pending';settleMatchReward(s);});$('storageWarning').dataset.rewardId=s.rewardId;}
+ finally{rewardInFlight.delete(s.rewardId);if(engine.s===s&&inGame)render();}
+ })();
+}
+function matchRewardHTML(s){if(!s.modeKey)return '';return '<div class="match-reward-result" role="status"><strong>'+esc(PLAY_MODES.find(m=>m.id===s.modeKey)?modeTitle(PLAY_MODES.find(m=>m.id===s.modeKey)):s.modeKey)+'</strong><span>'+esc(s.rewardClaimed?tr('本場獎勵：+','Match reward: +')+s.rewardCoins+tr(' 金幣（已入帳）',' coins (credited)'):s.rewardStatus==='error'?tr('金幣尚未入帳，請重試儲存。','Coins not credited. Retry saving.'):tr('正在結算本場金幣…','Crediting match coins…'))+'</span></div>';}
+
+function openPage(key){if(key==='tutorial'){startLessonOne();return;}$('menuView').dataset.page=key;$('mainLobby').style.display='none';$('menuView').classList.add('active');$('menuView').classList.remove('wide-collection-menu','mode-browser','collection-browser','collection-shop','collection-roster');$('menuTag').textContent=tr('新規則測試','New Rules Test');$('menuTitle').textContent=tr('基礎攻防測試','Base Gameplay Test');
+ if(key==='quick'||key==='challenge'){renderModeBrowser(key);}
  else if(key==='roster'){rosterTab='lineup';rosterTeam=null;rosterPlayer=null;editingSetup=starterCollection.activeLineup;editingSlot=null;renderStarterRoster();}
  else if(key==='tutorial'){renderTutorialPage();}
  else if(key==='shop'){renderShop('home');}
@@ -2302,6 +2489,7 @@ function setLanguage(value){language=value==='en'?'en':'zh-Hant';$('lobbyLanguag
  document.querySelectorAll('.handbar>b').forEach(el=>{el.innerHTML='<span id="handCountBadge"></span><span id="handEnergyBadge" class="hand-energy-badge" role="status" aria-live="polite"></span>';});
  staticText('.hand-scroll-hint',tr('左右捲動查看手牌','Scroll to view hand cards'));
  $('battleLogClose').textContent=tr('✕ 關閉','✕ Close');
+ if($('menuView').classList.contains('active')){if($('menuView').classList.contains('mode-browser'))renderModeBrowser($('menuView').dataset.page);else if($('menuView').classList.contains('collection-browser')){if($('menuView').dataset.page==='shop')renderShop();else if($('menuView').dataset.page==='roster')renderStarterRoster();}}
  if(inGame)render();
 }
 // Original BTCG view layer. The rules engine is the sole owner of scores and turn transitions.
@@ -2409,7 +2597,7 @@ function legacyResultLabel(){const s=engine.s,r=s.roll;if(r.kind==='tipoff')retu
 function renderActions(){
  const s=engine.s;$('actions').innerHTML='';
  if(pendingTarget){const b=document.createElement('button');b.type='button';b.id='cancelTargetSelection';b.className='target-selection-cancel';b.textContent=tr('取消發動','Cancel');b.onclick=cancelTargetSelection;$('actions').appendChild(b);return;}
- if(s.finished){for(const [text,fn]of [[tr('回到主畫面','Main Menu'),showLobby],[tr('查看本場遊戲數據表','View Match Stats'),()=>showStats(lastFinished)],[tr('重新開始','Restart'),()=>startMatch(controller,s.matchNames,s.cardTrial,s.startDecks?.every(d=>d.length)?s.startDecks:null,s.lineups,s.tutorial)]]){const b=document.createElement('button');b.textContent=text;b.dataset.mobileLabel=text;b.onclick=fn;$('actions').appendChild(b);}return;}
+ if(s.finished){$('actions').innerHTML=matchRewardHTML(s);for(const [text,fn]of [[tr('回到主畫面','Main Menu'),showLobby],[tr('查看本場遊戲數據表','View Match Stats'),()=>showStats(lastFinished)],[tr('重新開始','Restart'),restartCurrentMatch]]){const b=document.createElement('button');b.textContent=text;b.dataset.mobileLabel=text;b.onclick=fn;$('actions').appendChild(b);}return;}
  if(s.phase==='notice')return;
  if(selectedItem){const b=document.createElement('button');b.textContent=tr('取消卡片目標選擇','Cancel Card Target');b.onclick=()=>{selectedItem=null;render();};$('actions').appendChild(b);return;}
  if(s.phase==='rolling'){act(controller==='computer'&&s.roll.side===1?tr('對手正在擲骰…','Opponent rolling…'):tr('🎲 擲下一顆骰子','🎲 Roll Next Die'),'roll',{},controller==='computer'&&s.roll.side===1,true);return;}
@@ -2624,12 +2812,12 @@ $('menuText').addEventListener('click',e=>{
 });
 document.addEventListener('click',e=>{const menu=e.target.closest('[data-menu]');if(menu){openPage(menu.dataset.menu);return;}const p=e.target.closest('[data-player-index]');if(p){clickPlayer(+p.dataset.playerSide,+p.dataset.playerIndex);return;}const test=e.target.closest('[data-test-player]');if(test)inspectPlayer(0,+test.dataset.testPlayer);});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(pendingTarget){cancelTargetSelection();return;}closeModal();return;}if(e.key==='Enter'||e.key===' '){const p=e.target.closest('[data-player-index]');if(p){e.preventDefault();p.click();}}});
-$('lobbyLanguage').addEventListener('change',e=>setLanguage(e.target.value));bind('backMenu',showLobby);bind('goLobby',showLobby);bind('reset',()=>guidedLesson?startLessonOne():startMatch(controller,engine.s?.matchNames||{},!!engine.s?.cardTrial,engine.s?.startDecks?.every(d=>d.length)?engine.s.startDecks:null,engine.s?.lineups,engine.s?.tutorial));bind('battleStatsButton',()=>showStats());bind('lobbyLastStats',()=>showStats(lastFinished));
+$('lobbyLanguage').addEventListener('change',e=>setLanguage(e.target.value));bind('backMenu',showLobby);bind('goLobby',()=>requestMatchNavigation('lobby'));bind('reset',()=>requestMatchNavigation('restart'));bind('battleStatsButton',()=>showStats());bind('lobbyLastStats',()=>showStats(lastFinished));
 function togglePane(id){$(id).classList.toggle('open');if(id==='battleRules')$(id).open=true;}
 bind('battleLogToggle',()=>togglePane('battleHistory'));bind('battleRulesToggle',()=>togglePane('battleRules'));bind('battleLogClose',()=>$('battleHistory').classList.remove('open'));
 bind('layoutMode',()=>document.body.classList.toggle('layout-wide'));
 document.querySelectorAll('.version-main').forEach(el=>el.textContent=tr('新規則測試','New Rules Test'));
-$('bootHelp').style.display='none';setLanguage(language);showLobby();
+$('bootHelp').style.display='none';setLanguage(language);showLobby();if(lastFinished?.modeKey&&!lastFinished.rewardClaimed){lastFinished.rewardStatus='pending';settleMatchReward(lastFinished);}
 // Move the existing counters, never clone them: the renderer keeps one source of truth.
 if(typeof window.matchMedia==='function'){
  const desktopHUD=window.matchMedia('(min-width:961px)');
