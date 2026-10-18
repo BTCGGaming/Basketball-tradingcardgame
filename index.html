@@ -964,6 +964,7 @@ body.tutorial-active .tutorial-target::before,body.tutorial-active .tutorial-tar
 [data-shop-team-packs]>span:first-child,[data-shop-player-packs]>span:first-child,[data-shop-action-packs]>span:first-child{width:100%;min-width:0;text-align:center!important;overflow-wrap:anywhere}
 [data-shop-team-packs] .stage-arrow,[data-shop-player-packs] .stage-arrow,[data-shop-action-packs] .stage-arrow{position:absolute;right:13px;top:50%;transform:translateY(-50%)}
 .lineup-slot-wrapper,.lineup-choice-wrapper{display:flex;flex-direction:column;gap:6px;min-width:0}
+#menuView .lineup-picker{background:#101010;border-color:#604c33;color:#fff}#menuView .lineup-pick-grid .lineup-pick-card{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;text-align:center}#menuView .lineup-pick-card>span:last-child{font-size:12px;font-weight:800;margin-top:auto;border-top:1px solid currentColor;padding-top:8px;width:100%}
 .lineup-slot-wrapper>.lineup-slot,.lineup-choice-wrapper>.lineup-choice{width:100%;flex:1;white-space:normal;overflow-wrap:anywhere}
 .lineup-inspect{width:100%;padding:8px 4px;min-height:36px;font-size:12px;white-space:normal}
 .ui-notice-panel p,.ui-notice-panel h2,.ui-notice-panel button{overflow-wrap:anywhere;white-space:normal}
@@ -2322,7 +2323,17 @@ const starterCollection=loadStarterCollection();
 let lastSavedStarterCollection=copy(starterCollection);
 function ownedPlayerCount(id){return (TEST_PLAYERS.some(p=>p.id===id)?1:0)+(economy.playerOwned[id]||0);}
 function ownedPlayers(){return PLAYER_POOL.filter(p=>ownedPlayerCount(p.id)>0);}
-function starterLineupEditorHTML(ids){return '<div class="lineup-grid">'+SLOT_POS.map((pos,i)=>{const p=playerDefinition(ids[i]),index=p?PLAYER_POOL.indexOf(p):-1;return '<div class="lineup-slot-wrapper"><button class="lineup-slot" data-rookie-slot="'+i+'"><span>'+pos+'</span><span>'+(p?playerIconHTML(p):'＋')+'</span><strong>'+esc(p?playerName(index):tr('選擇球員','Choose Player'))+'</strong>'+(p?'<span>OFF '+p.off+' / DEF '+p.def+'</span>':'')+'</button>'+(p?'<button class="lineup-inspect" data-test-player="'+index+'">'+tr('🔎 放大檢視','🔎 Inspect')+'</button>':'')+'</div>';}).join('')+'</div>'+(editingSlot===null?'':'<div class="lineup-picker"><h3>'+tr('選擇','Choose ')+SLOT_POS[editingSlot]+'</h3>'+ownedPlayers().filter(p=>p.pos.split('/').includes(SLOT_POS[editingSlot])&&!ids.some((id,i)=>i!==editingSlot&&id===p.id)).map(p=>'<button data-rookie-assign="'+esc(p.id)+'">'+esc(playerName(PLAYER_POOL.indexOf(p)))+'</button>').join('')+'<button data-rookie-remove="'+editingSlot+'">'+tr('移除此位置球員','Clear This Slot')+'</button></div>');}
+function starterLineupEditorHTML(ids){return '<div class="lineup-grid">'+SLOT_POS.map((pos,i)=>{const p=playerDefinition(ids[i]),index=p?PLAYER_POOL.indexOf(p):-1;return '<div class="lineup-slot-wrapper"><button class="lineup-slot" data-rookie-slot="'+i+'"><span>'+pos+'</span><span>'+(p?playerIconHTML(p):'＋')+'</span><strong>'+esc(p?playerName(index):tr('選擇球員','Choose Player'))+'</strong>'+(p?'<span>OFF '+p.off+' / DEF '+p.def+'</span>':'')+'</button>'+(p?'<button class="lineup-inspect" data-test-player="'+index+'">'+tr('🔎 放大檢視','🔎 Inspect')+'</button>':'')+'</div>';}).join('')+'</div>'+lineupPlayerPickerHTML(ids);}
+function lineupPlayerPickerHTML(ids){
+ if(editingSlot===null)return '';
+ const available=ownedPlayers().filter(p=>p.pos.split('/').includes(SLOT_POS[editingSlot])&&!ids.some((id,i)=>i!==editingSlot&&id===p.id));
+ const series=[['starter','新秀球員系列','Rookie Series'],['champion','總冠軍系列','Championship Series'],['first','第一彈','First Edition']],belongs=(p,id)=>id==='starter'?!['first','champion'].includes(p.series):p.series===id;
+ let html='<section class="lineup-picker"><div class="lineup-toolbar"><h3>'+tr('選擇','Choose ')+SLOT_POS[editingSlot]+'</h3><button data-rookie-lineup-cancel="1">'+tr('取消選擇','Cancel')+'</button></div>';
+ if(lineupPickerSeries===null)return html+'<p>'+tr('先選擇球員卡系列','Choose a player card series first')+'</p><div class="team-tabs">'+series.map(([id,zh,en])=>'<button data-rookie-lineup-series="'+id+'">'+esc(tr(zh,en))+' · '+available.filter(p=>belongs(p,id)).length+tr(' 張',' cards')+'</button>').join('')+'</div><button data-rookie-remove="'+editingSlot+'">'+tr('移除此位置球員','Clear This Slot')+'</button></section>';
+ const cards=available.filter(p=>belongs(p,lineupPickerSeries)),selected=series.find(s=>s[0]===lineupPickerSeries);
+ html+='<div class="lineup-toolbar"><button data-rookie-lineup-series-back="1">← '+tr('返回系列選擇','Back to Series')+'</button><strong>'+esc(tr(selected[1],selected[2]))+'</strong></div>';
+ return html+(cards.length?'<div class="catalog-player-grid lineup-pick-grid">'+cards.map(p=>{const i=PLAYER_POOL.indexOf(p);return '<div class="lineup-choice-wrapper"><button type="button" class="catalog-player-tile lineup-pick-card player-collectible rarity-fill-'+p.rarity+'" data-rookie-assign="'+esc(p.id)+'"><span class="catalog-player-meta">'+esc(p.pos)+' '+rarityBadgeHTML(p)+'</span><span class="catalog-player-face">'+playerIconHTML(p)+'</span><strong>'+esc(playerName(i))+'</strong><span>'+esc(teamName(i))+'</span><span>OFF '+p.off+' / DEF '+p.def+'</span><span>'+tr('持有 ×','Owned ×')+ownedPlayerCount(p.id)+'</span><span>'+tr('點擊選入陣容','Click to Add to Lineup')+'</span></button><button type="button" class="lineup-inspect" data-test-player="'+i+'">'+tr('🔎 放大檢視','🔎 Inspect')+'</button></div>';}).join('')+'</div>':'<p>'+tr('此系列目前沒有已持有且可放入此位置的球員。','No owned players in this series are available for this position.')+'</p>')+'</section>';
+}
 function playerCatalogHTML(){
  let html='';if(rosterTab==='catalog')html+='<div class="team-tabs">'+[['starter','新秀球員系列','Rookie Series'],['champion','總冠軍系列','Championship Series'],...(FIRST_EDITION_POOL.players.length?[['first','第一彈','First Edition']]:[])].map(([id,zh,en])=>'<button data-rookie-series="'+id+'" class="'+(rosterCatalogSeries===id?'selected':'')+'">'+tr(zh,en)+'</button>').join('')+'</div>';
  const pool=rosterTab==='collection'?ownedPlayers():rosterCatalogSeries==='champion'?CHAMPION_PLAYERS:rosterCatalogSeries==='first'?FIRST_EDITION_POOL.players:TEST_PLAYERS;
@@ -2334,7 +2345,7 @@ function playerCatalogHTML(){
 let actionCatalogCategory=null,actionCatalogSeries='starter';
 let deckPicker=null;
 let rosterCatalogSeries='starter';
-let rosterTab='lineup',rosterTeam=null,rosterPlayer=null,editingSetup=0,editingSlot=null;
+let rosterTab='lineup',rosterTeam=null,rosterPlayer=null,editingSetup=0,editingSlot=null,lineupPickerSeries=null;
 function saveStarterCollection(){try{if(!starterStorageHealthy)throw Error('Unreadable save');localStorage.setItem(starterCollectionKey,JSON.stringify(starterCollection));lastSavedStarterCollection=copy(starterCollection);return true;}catch(_){Object.assign(starterCollection,copy(lastSavedStarterCollection));storageWarning(tr('陣容／卡組儲存失敗，已回復上次成功儲存的內容。請檢查瀏覽器儲存空間。','Lineup / deck save failed. The last saved setup has been restored. Check browser storage.'));return false;}}
 function ownedActionCount(id){return (starterCollection.actionOwned[id]||0)+(economy.actionOwned[id]||0);}
 function ownedActionBadge(id){const count=ownedActionCount(id);return '<span class="owned-card-count" aria-label="'+esc(tr('持有數量：','Owned: ')+count)+'" title="'+esc(tr('持有數量','Owned copies'))+'">X'+count+'</span>';}
@@ -3081,7 +3092,10 @@ $('menuText').addEventListener('click',e=>{
  else if(el=find('team')){rosterTeam=Number(el.dataset.rookieTeam);rosterPlayer=null;}
  else if(el=find('detail'))rosterPlayer=Number(el.dataset.rookieDetail);
  else if(el=find('back')){rosterTeam=null;rosterPlayer=null;}
- else if(el=find('slot'))editingSlot=Number(el.dataset.rookieSlot);
+ else if(el=find('slot')){editingSlot=Number(el.dataset.rookieSlot);lineupPickerSeries=null;}
+ else if(el=find('lineup-series')){const series=el.dataset.rookieLineupSeries;if(editingSlot!==null&&['starter','champion','first'].includes(series))lineupPickerSeries=series;}
+ else if(find('lineup-series-back'))lineupPickerSeries=null;
+ else if(find('lineup-cancel')){editingSlot=null;lineupPickerSeries=null;}
  else if(el=find('assign')){const id=el.dataset.rookieAssign,slot=editingSlot,p=playerDefinition(id),ids=starterCollection.lineups[editingSetup];if(Number.isInteger(slot)&&p?.pos.split('/').includes(SLOT_POS[slot])&&ownedPlayerCount(id)>0&&!ids.some((other,i)=>i!==slot&&other===id)){ids[slot]=id;editingSlot=null;saveStarterCollection();}}
  else if(el=find('remove')){starterCollection.lineups[editingSetup][Number(el.dataset.rookieRemove)]=null;editingSlot=null;saveStarterCollection();}
  else if(find('reset')){starterCollection.lineups[editingSetup]=TEST_PLAYERS.map(p=>p.id);editingSlot=null;saveStarterCollection();}
