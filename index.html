@@ -2777,10 +2777,10 @@ function renderStarterRoster(){
 function renameStarterSetup(kind){const index=editingSetup;openModal('<h2>'+tr('陣容／卡組命名','Name Your Setup')+'</h2><p>'+tr('最多8字，僅限中文、英文及數字。','Up to 8 Chinese characters, English letters, or digits.')+'</p><input id="rookieSetupName" value="'+esc(starterCollection[kind+'Names'][index])+'" aria-label="'+tr('名稱','Name')+'"><p id="rookieNameError" class="danger" role="alert"></p><button id="rookieSaveName" class="primary">'+tr('儲存','Save')+'</button>');bind('rookieSaveName',()=>{const value=$('rookieSetupName').value;if(!validSetupName(value)){$('rookieNameError').textContent=tr('名稱需1至8字，只能使用中文、英文或數字。','Use 1–8 Chinese characters, English letters, or digits.');return;}starterCollection[kind+'Names'][index]=value;if(!saveStarterCollection())return;closeModal();renderStarterRoster();});}
 
 const PLAY_MODES=Object.freeze([
- {id:'quick-random',name:['速戰速決','Quick Match'],team:['隨機隊伍','Random Team'],desc:['( 與AI來場一節決勝負的快速對戰 )','( A quick, one-quarter match against AI )'],quarters:1,win:100,loss:50,open:true},
- {id:'standard-random',name:['標準對戰','Standard Match'],team:['隨機隊伍','Random Team'],desc:['( 與AI進行一場4節完整的BTCG對戰 )','( A full four-quarter BTCG match against AI )'],quarters:4,win:500,loss:300,open:true},
- {id:'quick-theme',name:['速戰速決','Quick Match'],team:['主題隊伍','Themed Team'],desc:['( 與完整球隊進行一節決勝負 )','( A one-quarter match against a complete team )'],quarters:1,win:200,loss:100,open:false},
- {id:'standard-theme',name:['標準對戰','Standard Match'],team:['主題隊伍','Themed Team'],desc:['( 與完整球隊進行一場4節完整對戰 )','( A full four-quarter match against a complete team )'],quarters:4,win:1000,loss:500,open:false}
+ {id:'quick-random',name:['速戰速決','Quick Match'],team:['隨機隊伍','Random Team'],desc:['( 與AI來場一節決勝負的快速對戰 )','( A quick, one-quarter match against AI )'],quarters:1,win:200,loss:100,open:true},
+ {id:'standard-random',name:['標準對戰','Standard Match'],team:['隨機隊伍','Random Team'],desc:['( 與AI進行一場4節完整的BTCG對戰 )','( A full four-quarter BTCG match against AI )'],quarters:4,win:1000,loss:600,open:true},
+ {id:'quick-theme',name:['速戰速決','Quick Match'],team:['主題隊伍','Themed Team'],desc:['( 與完整球隊進行一節決勝負 )','( A one-quarter match against a complete team )'],quarters:1,win:400,loss:200,open:false},
+ {id:'standard-theme',name:['標準對戰','Standard Match'],team:['主題隊伍','Themed Team'],desc:['( 與完整球隊進行一場4節完整對戰 )','( A full four-quarter match against a complete team )'],quarters:4,win:2000,loss:1000,open:false}
 ]);
 const CHALLENGE_MODES=Object.freeze([
  {id:'league',name:['征戰聯盟','League Conquest'],desc:['( 嘗試爭奪冠軍的各個強隊,究竟誰是最後的王者 )','( Championship contenders compete. Who will be the last team standing? )']},
