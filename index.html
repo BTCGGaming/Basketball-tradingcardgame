@@ -1710,7 +1710,7 @@ class RulesTestEngine {
   else if(action.type==='ack'&&s.phase==='notice'){const key=s.notice.key;s.notice=null;s.lastScoreSkill=null;if(key==='otTip'||key==='matchIntro')this.beginRoll('tipoff',0,1,1);else s.phase='action';valid=true;}
   else if(s.phase==='action'&&Number.isInteger(action.side)&&action.side===s.turn){const side=s.turn,isOff=side===s.offense;
    if(action.type==='pass'&&isOff&&s.energy[side]>=this.passCost(side)&&Number.isInteger(action.to)&&action.to>=0&&action.to<5&&action.to!==s.holder){const cost=this.passCost(side);s.energy[side]-=cost;s.passTax[side]=0;this.startPassSequence(side,[action.to],{kind:'normal',cost});valid=true;}
-   else if(action.type==='shot'&&isOff&&!s.noNormal[side][s.holder]&&SHOTS[action.kind]&&s.energy[side]>=SHOTS[action.kind].cost&&!s.firstItems11?.steroidsBan?.[side]?.[s.holder]&&(action.kind!=='hard'||s.energy[side]===0)){
+   else if(action.type==='shot'&&isOff&&!s.noNormal[side][s.holder]&&SHOTS[action.kind]&&s.energy[side]>=SHOTS[action.kind].cost&&!s.firstItems11?.steroidsBan?.[side]?.[s.holder]){
     s.energy[side]-=SHOTS[action.kind].cost;this.declareShot(side,action.kind);valid=true;
    }
    else if(action.type==='steal'&&!isOff&&s.energy[side]>=2){s.energy[side]-=2;const c=this.defenseCheck();this.log('stealDeclared',{side});this.beginRoll('steal',side,c.dice,c.target,c.faces);valid=true;}
@@ -2598,7 +2598,7 @@ function aiRollChance(c){
 function aiActions(e,side,{finishes=false,publicOnly=false}={}){
  const s=e.s,off=side===s.offense,out=[];
  if(!['action','shotresponse'].includes(s.phase)||s.turn!==side)return out;
- if(off&&s.phase==='action'&&!s.noNormal[side][s.holder]&&!s.firstItems11?.steroidsBan?.[side]?.[s.holder])for(const [kind,c]of Object.entries(SHOTS))if(s.energy[side]>=c.cost&&(kind!=='hard'||s.energy[side]===0))out.push({type:'shot',side,kind});
+ if(off&&s.phase==='action'&&!s.noNormal[side][s.holder]&&!s.firstItems11?.steroidsBan?.[side]?.[s.holder])for(const [kind,c]of Object.entries(SHOTS))if(s.energy[side]>=c.cost)out.push({type:'shot',side,kind});
  for(let index=0;index<5;index++)for(const a of skillsOf(e.player(side,index))){
   if(e.skillReason(side,index,a.id))continue;
   // Never pay for Frogg's conditional bonus when the matchup cannot activate it.
@@ -2757,13 +2757,10 @@ function aiOffensePlan(root){
  for(const parent of beam)for(const action of aiActions(parent.e,root.s.turn)){
   if(action.type==='shot')continue;const node=aiPrepareNode(root,parent,action,parent.first,2);if(node&&node.score>best.score+0.015)best={action:node.first,score:node.score};
  }
- // At zero Energy, a legal Forced shot remains an option even with zero
- // calculated make probability. Never burn the remaining actions by skipping
- // merely because the shot cannot tie the score or beat the defender.
- if(root.s.energy[root.s.turn]===0){
-  const forced=aiActions(root,root.s.turn,{finishes:true,publicOnly:true}).find(a=>a.type==='shot'&&a.kind==='hard');
-  if(forced&&(best.action.type==='skip'||best.action.type==='shot'&&best.action.kind!=='hard'))return forced;
- }
+ // When setup actions offer no better finish, attempt a legal shot at ANY Energy.
+ // A Forced shot is always an option, even when its predicted make chance is zero.
+ const forced=aiActions(root,root.s.turn,{finishes:true,publicOnly:true}).find(a=>a.type==='shot'&&a.kind==='hard');
+ if(best.action.type==='skip'&&forced)return finish?.action||forced;
  return best.action;
 }
 function aiDefensePlan(root){
@@ -2863,7 +2860,7 @@ function startMatch(mode='computer',names={},cardTrial=false,deckLists=null,line
 function rulesHTML(){return '<h3>'+tr('新規則・卡片測試','New Rules · Card Test')+'</h3><ul>'+[
  engine.s?.regulationQuarters===1?tr('單節決勝，每節雙方共用10次球權。開場擲骰勝方先攻，平手進入延長賽。','One quarter, 10 shared possessions. Opening-roll winner starts; ties go to overtime.'):tr('四節，每節雙方共用10次球權。第一、四節由開場擲骰勝方先攻，第二、三節由另一方先攻。','4 quarters, 10 shared possessions each. Opening-roll winner starts Q1 and Q4; the other side starts Q2 and Q3.'),
  tr('雙方輪流一次行動：出牌、技能、傳球、出手、抄截或略過。傳球耗1能量。守方只能在出手反應時封阻。','Alternate one action: a card, skill, pass, shot, Steal, or skip. Pass costs 1 Energy. Blocks are only available in the shot response.'),
- tr('禁區：3能量、2骰中1、2分。中距離：2能量、3骰中2、2分。三分：3能量、3骰中2、3分。0能量可受壓迫出手：1骰中1、只有6有效、2分。','Inside: Energy 3, Dice 2, Target 1, 2 points. Mid-range: Energy 2, Dice 3, Target 2, 2 points. 3PT: Energy 3, Dice 3, Target 2, 3 points. At 0 Energy: Forced shot, Dice 1, Target 1, only 6 counts, 2 points.'),
+ tr('禁區：3能量、2骰中1、2分。中距離：2能量、3骰中2、2分。三分：3能量、3骰中2、3分。任何能量皆可受壓迫出手：1骰中1、只有6有效、2分。','Inside: Energy 3, Dice 2, Target 1, 2 points. Mid-range: Energy 2, Dice 3, Target 2, 2 points. 3PT: Energy 3, Dice 3, Target 2, 3 points. At 0 Energy: Forced shot, Dice 1, Target 1, only 6 counts, 2 points.'),
  tr('擲骰數最低可為0。0骰且仍需有效數時直接失敗；需有效數為0時直接成功。','Dice may reach 0. With 0 Dice and a positive Target, the roll fails automatically. Target 0 succeeds automatically.'),
  tr('一般有效骰面4、5、6。出手：進攻每高滿防守100點＋1骰，反之－1骰。抄截、封阻以防守比較進攻。最低1骰，需有效數不變。受壓迫出手也適用。籃板不比較攻防。','4, 5, 6 normally count. Each full 100-point OFF advantage adds 1 shot die; each full DEF advantage removes 1. Steals / Blocks compare DEF to OFF. Minimum 1 die; Target unchanged. Forced shots use this comparison too. Rebounds ignore OFF / DEF.'),
  tr('宣告出手後，守方有一次反應，出牌、技能、封阻或略過擇一；之後直接判定。','After a shot is declared, DEF gets one response: card, skill, Block, or skip. Then resolve the shot.'),
@@ -3735,8 +3732,9 @@ function renderActions(){
  if(s.phase==='shotresponse'){const c=engine.defenseCheck('block');act(tr('🛡️ 封阻','🛡️ Block')+' (⚡2｜'+c.dice+tr('骰需',' Dice / Target ')+c.target+')','block',{side:s.turn},s.energy[s.turn]<2||!engine.canBlock(),true);act(tr('不封阻・進入出手骰','Skip Block · Roll Shot'),'skip',{side:s.turn});return;}
  if(s.turn===s.offense){
   if(s.energy[s.turn]>0){const b=document.createElement('button');b.textContent=tr('傳球（-'+engine.passCost(s.turn)+' 能量）','Pass (Energy −'+engine.passCost(s.turn)+')');b.disabled=s.energy[s.turn]<engine.passCost(s.turn);b.dataset.mobileLabel=b.textContent;const id=s.id,rev=s.revision;b.onclick=()=>{if(engine.s.id===id&&engine.s.revision===rev){selectedPassSide=s.turn;render();}};$('actions').appendChild(b);
-   for(const kind of ['mid','three','paint']){const p=SHOTS[kind],c=engine.shotCheck(kind);act(shotName(kind)+' (⚡'+p.cost+'｜'+c.dice+tr('骰需',' Dice / Target ')+c.target+')','shot',{side:s.turn,kind},s.energy[s.turn]<p.cost||s.noNormal[s.turn][s.holder],true);}
-  }else{const c=engine.shotCheck('hard');act(shotName('hard')+' (⚡0｜'+c.dice+tr('骰需',' Dice / Target ')+c.target+tr('・有效骰面 ',' · Success Faces ')+c.faces.join(', ')+')','shot',{side:s.turn,kind:'hard'},s.noNormal[s.turn][s.holder],true);}
+   for(const kind of ['mid','three','paint']){const p=SHOTS[kind],c=engine.shotCheck(kind);act(shotName(kind)+' (⚡'+p.cost+'｜'+c.dice+tr('骰需',' Dice / Target ')+c.target+')','shot',{side:s.turn,kind},s.energy[s.turn]<p.cost||s.noNormal[s.turn][s.holder]||!!s.firstItems11?.steroidsBan?.[s.turn]?.[s.holder],true);}
+  }
+  const forcedCheck=engine.shotCheck('hard');act(shotName('hard')+' (⚡0｜'+forcedCheck.dice+tr('骰需',' Dice / Target ')+forcedCheck.target+tr('・有效骰面 ',' · Success Faces ')+forcedCheck.faces.join(', ')+')','shot',{side:s.turn,kind:'hard'},s.noNormal[s.turn][s.holder]||!!s.firstItems11?.steroidsBan?.[s.turn]?.[s.holder],true);
  }else{const c=engine.defenseCheck();act(tr('抄截','Steal')+' (⚡2｜'+c.dice+tr('骰需',' Dice / Target ')+c.target+')','steal',{side:s.turn},s.energy[s.turn]<2,true);}
  act(tr('略過行動','Skip Action')+(s.turn===s.offense?' ('+s.skipped[s.turn]+'/3)':''),'skip',{side:s.turn});
 }
